@@ -1,4 +1,4 @@
-module github.com/ricotoothless/peggo-exporter
+module github.com/stakefish/peggo-exporter
 
 go 1.18
 

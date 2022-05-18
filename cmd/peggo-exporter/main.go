@@ -15,7 +15,7 @@ import (
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/ricotoothless/peggo-exporter/collector"
+	"github.com/stakefish/peggo-exporter/collector"
 )
 
 var (
