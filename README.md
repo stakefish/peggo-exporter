@@ -49,10 +49,7 @@ docker buildx build --platform=linux/amd64 -t peggo-exporter .
 3. Get event nonce for each orch address
 4. Compare my own orch's event nonce with the others
 
-Each operator will decide when to trigger an alarm based on these values.
-
-A good baseline would be to trigger an alarm if own event nonce is not
-moving (while others do) in the last 10 minutes.
+The suggested Prometheus interval is 5 minutes, and the timeout is 1 minute.
 
 Endpoints used:
 
