@@ -26,7 +26,6 @@ type Exporter struct {
 	// Metrics
 	peggoHeighestEventNonce *prometheus.Desc
 	peggoOwnEventNonce      *prometheus.Desc
-	peggoSync               *prometheus.Desc
 }
 
 type QueryValidatorsResponse struct {
@@ -66,19 +65,12 @@ func New(peggoRestRpc string, cosmosOrchestratorAddr string, timeout time.Durati
 			nil,
 			nil,
 		),
-		peggoSync: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "peggo_sync"),
-			"Compare your own orchestrator event nonce with the highest event nonce are the same",
-			nil,
-			nil,
-		),
 	}
 }
 
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.peggoHeighestEventNonce
 	ch <- e.peggoOwnEventNonce
-	ch <- e.peggoSync
 }
 
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
@@ -166,13 +158,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		eventNonces = append(eventNonces, evtNonce)
 	}
 
-	if heighestEventNonce > ownEventNonce {
-		ch <- prometheus.MustNewConstMetric(e.peggoSync, prometheus.GaugeValue, 0)
-	}
-
 	ch <- prometheus.MustNewConstMetric(e.peggoHeighestEventNonce, prometheus.GaugeValue, float64(heighestEventNonce))
 	ch <- prometheus.MustNewConstMetric(e.peggoOwnEventNonce, prometheus.GaugeValue, float64(ownEventNonce))
-	ch <- prometheus.MustNewConstMetric(e.peggoSync, prometheus.GaugeValue, 1)
 
 	data := map[string]interface{}{}
 	data["ownEventNonce"] = ownEventNonce
