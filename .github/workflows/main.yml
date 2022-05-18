@@ -1,0 +1,97 @@
+on: push
+name: CI
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+jobs:
+  # golang-github-actions is failing due to go version incompatibility
+  # issue ref: https://github.com/grandcolline/golang-github-actions/issues/20
+  #  static-analysis:
+  #    name: Static analysis
+  #    runs-on: ubuntu-latest
+  #    steps:
+  #    - uses: actions/checkout@v2
+  #    - name: go vet
+  #      continue-on-error: false
+  #      uses: grandcolline/golang-github-actions@v1.1.0
+  #      with:
+  #        run: vet
+  #    - name: staticcheck
+  #      continue-on-error: false
+  #      uses: grandcolline/golang-github-actions@v1.1.0
+  #      with:
+  #        run: staticcheck
+  #    - name: gosec
+  #      # Gives too many false positives.
+  #      continue-on-error: true
+  #      uses: grandcolline/golang-github-actions@v1.1.0
+  #      with:
+  #        run: sec
+  #        flags: "-exclude=G104"
+  #    - name: misspell
+  #      continue-on-error: false
+  #      run: |
+  #        go get -u github.com/client9/misspell/cmd/misspell
+  #        $(go env GOPATH)/bin/misspell -locale US *.md $(find . -name '*.go')
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: golangci-lint
+      continue-on-error: true
+      run: |
+        make lint
+
+  build:
+    name: Build the executable
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-go@v2
+      with:
+        go-version: 1.18.x
+    - uses: actions/checkout@v2
+    - name: Build
+      run: |
+        make build
+    - name: Upload binaries
+      uses: actions/upload-artifact@master
+      with:
+        name: Executables
+        path: "bin"
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/v')
+      with:
+        files: |
+          bin/*
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
