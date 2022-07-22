@@ -20,7 +20,13 @@
 # include Makefile.common
 # customTarget:
 # 	@echo ">> Running customTarget"
+
+# stakefish modification
 #
+# Because not all the features fit our requirements. We removed some features:
+# * docker build related
+# * check license
+# * test
 
 # Ensure GOBIN is not set during build so that promu is installed to the correct path
 unexport GOBIN
@@ -114,7 +120,7 @@ endif
 %: common-% ;
 
 .PHONY: common-all
-common-all: precheck style check_license lint yamllint unused build test
+common-all: precheck style lint yamllint unused build
 
 .PHONY: common-style
 common-style:
@@ -125,17 +131,6 @@ common-style:
 		echo "Please ensure you are using $$($(GO) version) for formatting code."; \
 		exit 1; \
 	fi
-
-.PHONY: common-check_license
-common-check_license:
-	@echo ">> checking license header"
-	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*') ; do \
-               awk 'NR<=3' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
-       done); \
-       if [ -n "$${licRes}" ]; then \
-               echo "license header checking failed:"; echo "$${licRes}"; \
-               exit 1; \
-       fi
 
 .PHONY: common-deps
 common-deps:
@@ -156,19 +151,6 @@ update-go-deps:
 ifneq (,$(wildcard vendor))
 	GO111MODULE=$(GO111MODULE) $(GO) mod vendor
 endif
-
-.PHONY: common-test-short
-common-test-short: $(GOTEST_DIR)
-	@echo ">> running short tests"
-	GO111MODULE=$(GO111MODULE) $(GOTEST) -short $(GOOPTS) $(pkgs)
-
-.PHONY: common-test
-common-test: $(GOTEST_DIR)
-	@echo ">> running all tests"
-	GO111MODULE=$(GO111MODULE) $(GOTEST) $(test-flags) $(GOOPTS) $(pkgs)
-
-$(GOTEST_DIR):
-	@mkdir -p $@
 
 .PHONY: common-format
 common-format:
